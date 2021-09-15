@@ -1,23 +1,35 @@
 import { HttpContextContract } from "@ioc:Adonis/Core/HttpContext";
 import User from "App/Models/User";
 import bcrypt from 'bcrypt';
-
+import CreateUserValidator from "App/Validators/CreateUserValidator";
 
 export default class AuthUsersController {
 
     public async index() {
-        return User.all();
+        return User.query().select('name', 'email', 'createdAt', 'updatedAt');
     }
 
-    public async register ({ request}: HttpContextContract) {
+    public async register ({ request, response}: HttpContextContract) {
 
-        const data = request.all()
-        const user = new User();
+        const data = await request.validate(CreateUserValidator)
+    
+        await User.create({
+            name : data.name,
+            email : data.email,
+            password : await bcrypt.hash(data.password, 8)
+        });
 
-        user.name = data.name;
-        user.email = data.email;
-        user.password = await bcrypt.hash(data.password, 8);
+        return response.status(201).json({
+            sucess : true,
+            data : {}
+        })
+    }
 
-        return await user.save();
+    public async login({ request }: HttpContextContract) {
+
+        const data = await request.validate(CreateUserValidator)
+
+        return data
+
     }
 }
